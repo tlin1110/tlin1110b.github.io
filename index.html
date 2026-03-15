@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寻宝游戏 - 可切换视觉辅助 | 小学数学数对</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+        }
+        
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            padding: 15px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            color: #f1c40f;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #bdc3c7;
+            max-width: 700px;
+            margin: 0 auto 15px;
+            line-height: 1.5;
+        }
+        
+        .knowledge-box {
+            background: rgba(241, 196, 15, 0.15);
+            border: 2px solid #f1c40f;
+            border-radius: 15px;
+            padding: 12px 20px;
+            margin: 15px auto;
+            max-width: 550px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .knowledge-box h3 {
+            color: #f1c40f;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+        }
+        
+        .knowledge-box p {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        
+        .game-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            align-items: stretch;
+        }
+        
+        .map-section {
+            flex: 2;
+            min-width: 550px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-panel {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #f1c40f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        /* 网格布局 - 完全对齐 */
+        .grid-outer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .row-label-container {
+            display: flex;
+            flex-direction: column;
+            margin-right: 12px;
+            height: fit-content;
+        }
+        
+        .row-label {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 2.5px 0;
+            line-height: 1;
+        }
+        
+        .grid-with-labels {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .col-label-container {
+            display: flex;
+            margin-bottom: 8px;
+            padding-left: 0;
+        }
+        
+        .col-label {
+            width: 60px;
+            text-align: center;
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin: 0 2.5px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 12px;
+            border: 3px solid #f1c40f;
+        }
+        
+        .grid-cell {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #fff;
+            padding: 2px;
+            position: relative;
+        }
+        
+        .grid-cell:hover {
+            background: rgba(241, 196, 15, 0.3);
+            transform: scale(1.05);
+            border-color: #f1c40f;
+        }
+        
+        .grid-cell.revealed {
+            background: rgba(241, 196, 15, 0.2);
+            border-color: #f1c40f;
+        }
+        
+        .grid-cell.treasure {
+            background: rgba(241, 196, 15, 0.6);
+            border-color: #f1c40f;
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        
+        /* 视觉辅助样式 - 只有在启用时才应用 */
+        .grid-cell.highlight-row.visual-aid-on {
+            background: rgba(52, 152, 219, 0.3);
+            border-color: #3498db;
+            border-width: 3px;
+        }
+        
+        .grid-cell.highlight-col.visual-aid-on {
+            background: rgba(46, 204, 113, 0.3);
+            border-color: #2ecc71;
+            border-width: 3px;
+        }
+        
+        .grid-cell.intersection.visual-aid-on {
+            background: rgba(241, 196, 15, 0.4);
+            border-color: #f1c40f;
+            border-width: 3px;
+            box-shadow: 0 0 10px #f1c40f;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #f1c40f; }
+            to { box-shadow: 0 0 15px #f1c40f; }
+        }
+        
+        .grid-cell .coordinates {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 2px;
+            transition: opacity 0.2s ease;
+        }
+        
+        .grid-cell .coordinates.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .grid-cell .emoji {
+            font-size: 1.8rem;
+            line-height: 1;
+        }
+        
+        .grid-cell .item-name {
+            font-size: 0.6rem;
+            position: absolute;
+            bottom: 2px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #ecf0f1;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 2px;
+        }
+        
+        .map-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0 5px;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #f1c40f;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #bdc3c7;
+        }
+        
+        .clue-box {
+            background: rgba(241, 196, 15, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 2px solid #f1c40f;
+        }
+        
+        .clue-title {
+            color: #f1c40f;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        
+        .clue-text {
+            font-size: 1.3rem;
+            text-align: center;
+            color: #fff;
+            line-height: 1.6;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .clue-highlight {
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 1.4rem;
+        }
+        
+        .clue-item {
+            display: inline-block;
+            background: rgba(241, 196, 15, 0.2);
+            padding: 5px 15px;
+            border-radius: 30px;
+            margin: 5px;
+            font-size: 1.2rem;
+        }
+        
+        .item-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .item-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .item-badge:hover {
+            background: rgba(241, 196, 15, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .item-badge.active {
+            background: rgba(241, 196, 15, 0.5);
+            border: 1px solid #f1c40f;
+        }
+        
+        .clue-history {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .clue-history-title {
+            color: #bdc3c7;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .clue-history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            border-left: 3px solid #f1c40f;
+        }
+        
+        .input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 15px 0;
+        }
+        
+        .coordinate-input {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .coordinate-input input {
+            width: 80px;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .coordinate-input span {
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #f1c40f, #e67e22);
+            color: #333;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(145deg, #e67e22, #f1c40f);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(241, 196, 15, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(145deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(145deg, #2ecc71, #27ae60);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(145deg, #27ae60, #2ecc71);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+        }
+        
+        .btn-info {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(145deg, #8e44ad, #9b59b6);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(155, 89, 182, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(145deg, #e67e22, #d35400);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(145deg, #d35400, #e67e22);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(230, 126, 34, 0.3);
+        }
+        
+        .btn-block {
+            width: 100%;
+            margin: 5px 0;
+        }
+        
+        .message-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 1rem;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            line-height: 1.5;
+        }
+        
+        .message-box.success {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: #2ecc71;
+            color: #2ecc71;
+        }
+        
+        .message-box.warning {
+            background: rgba(241, 196, 15, 0.2);
+            border-color: #f1c40f;
+            color: #f1c40f;
+        }
+        
+        .message-box.error {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+        
+        .message-box.info {
+            background: rgba(52, 152, 219, 0.2);
+            border-color: #3498db;
+            color: #3498db;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin: 15px 0 5px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-color {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+        }
+        
+        .legend-color.treasure {
+            background: rgba(241, 196, 15, 0.6);
+            border: 2px solid #f1c40f;
+        }
+        
+        .legend-color.item {
+            background: rgba(52, 152, 219, 0.6);
+            border: 2px solid #3498db;
+        }
+        
+        .legend-color.row {
+            background: rgba(52, 152, 219, 0.3);
+            border: 2px solid #3498db;
+        }
+        
+        .legend-color.col {
+            background: rgba(46, 204, 113, 0.3);
+            border: 2px solid #2ecc71;
+        }
+        
+        .legend-color.empty {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toggle-status {
+            font-size: 0.9rem;
+            color: #bdc3c7;
+            margin-left: 5px;
+        }
+        
+        .visual-aid-status {
+            font-size: 0.9rem;
+            color: #f1c40f;
+            font-weight: bold;
+        }
+        
+        .info-footer {
+            margin-top: auto;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #bdc3c7;
+            font-size: 0.85rem;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 900px) {
+            .game-area {
+                flex-direction: column;
+            }
+            
+            .map-section, .info-panel {
+                min-width: auto;
+            }
+            
+            .grid {
+                grid-template-columns: repeat(8, 50px);
+            }
+            
+            .col-label {
+                width: 50px;
+            }
+            
+            .row-label {
+                height: 50px;
+            }
+            
+            .grid-cell {
+                width: 50px;
+                height: 50px;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: repeat(8, 45px);
+                gap: 4px;
+            }
+            
+            .col-label {
+                width: 45px;
+                font-size: 0.9rem;
+            }
+            
+            .row-label {
+                height: 45px;
+                font-size: 0.9rem;
+            }
+            
+            .grid-cell {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .grid-cell .emoji {
+                font-size: 1.6rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .grid {
+                grid-template-columns: repeat(8, 40px);
+                gap: 3px;
+            }
+            
+            .col-label {
+                width: 40px;
+                font-size: 0.8rem;
+            }
+            
+            .row-label {
+                height: 40px;
+                font-size: 0.8rem;
+            }
+            
+            .grid-cell {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .grid-cell .emoji {
+                font-size: 1.4rem;
+            }
+            
+            .grid-cell .item-name {
+                font-size: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ 寻宝游戏 · 可切换视觉辅助</h1>
+            <p class="subtitle">每张地图只有一个宝藏，位于两个物品的行和列相交的位置。可以开启或关闭视觉辅助来帮助推理。</p>
+            
+            <div class="knowledge-box">
+                <h3>📚 数对推理</h3>
+                <p>宝藏藏在两个物品的<strong>行和列相交</strong>的位置。<br>
+                例如：如果物品A在第3行，物品B在第5列，宝藏就在(5,3)！</p>
+            </div>
+        </header>
+        
+        <div class="game-area">
+            <!-- 左边：藏宝地图 -->
+            <div class="map-section">
+                <h2 class="section-title">📍 藏宝地图</h2>
+                
+                <div class="grid-container">
+                    <div class="grid-outer">
+                        <!-- 行标签 (1-8 从上到下) -->
+                        <div class="row-label-container">
+                            <div class="row-label" style="visibility: hidden;">0</div>
+                            <div class="row-label">8</div>
+                            <div class="row-label">7</div>
+                            <div class="row-label">6</div>
+                            <div class="row-label">5</div>
+                            <div class="row-label">4</div>
+                            <div class="row-label">3</div>
+                            <div class="row-label">2</div>
+                            <div class="row-label">1</div>
+                        </div>
+                        
+                        <div class="grid-with-labels">
+                            <!-- 列标签 (1-8 从左到右) -->
+                            <div class="col-label-container">
+                                <div class="col-label">1</div>
+                                <div class="col-label">2</div>
+                                <div class="col-label">3</div>
+                                <div class="col-label">4</div>
+                                <div class="col-label">5</div>
+                                <div class="col-label">6</div>
+                                <div class="col-label">7</div>
+                                <div class="col-label">8</div>
+                            </div>
+                            
+                            <!-- 游戏网格 -->
+                            <div class="grid" id="gameGrid"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="map-controls">
+                        <button class="btn btn-secondary" id="showCoordsBtn">
+                            👁️ 显示坐标
+                        </button>
+                        <button class="btn btn-warning" id="hideCoordsBtn">
+                            🚫 隐藏坐标
+                        </button>
+                        <span class="toggle-status" id="coordStatus">当前: 显示坐标</span>
+                    </div>
+                    
+                    <div class="map-controls">
+                        <button class="btn btn-info" id="visualAidOnBtn">
+                            🔆 开启视觉辅助
+                        </button>
+                        <button class="btn btn-warning" id="visualAidOffBtn">
+                            ⚫ 关闭视觉辅助
+                        </button>
+                        <span class="visual-aid-status" id="visualAidStatus">视觉辅助: 开启</span>
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color item"></div>
+                        <span>物品</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color row"></div>
+                        <span>线索行</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color col"></div>
+                        <span>线索列</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color treasure"></div>
+                        <span>宝藏</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右边：寻宝信息面板 -->
+            <div class="info-panel">
+                <h2 class="section-title">🔍 推理面板</h2>
+                
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <div class="stat-label">已探索</div>
+                        <div class="stat-value" id="exploredCount">0</div>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <div class="stat-label">剩余格子</div>
+                        <div class="stat-value" id="remainingCount">64</div>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <div class="stat-label">线索数量</div>
+                        <div class="stat-value" id="clueCount">0</div>
+                    </div>
+                    
+                    <div class="stat-box">
+                        <div class="stat-label">宝藏</div>
+                        <div class="stat-value" id="treasureStatus">❓</div>
+                    </div>
+                </div>
+                
+                <div class="clue-box">
+                    <div class="clue-title">📜 最新线索</div>
+                    <div class="clue-text" id="clueText">
+                        点击下方按钮获取线索
+                    </div>
+                </div>
+                
+                <div class="clue-history">
+                    <div class="clue-history-title">📋 线索记录</div>
+                    <div class="clue-history-list" id="clueHistory">
+                        <!-- 线索历史会动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="item-list" id="itemList">
+                    <!-- 物品列表会动态生成 -->
+                </div>
+                
+                <div class="input-area">
+                    <div class="coordinate-input">
+                        <span>列 (1-8):</span>
+                        <input type="number" id="colInput" min="1" max="8" value="1">
+                    </div>
+                    <div class="coordinate-input">
+                        <span>行 (1-8):</span>
+                        <input type="number" id="rowInput" min="1" max="8" value="1">
+                    </div>
+                    <button class="btn btn-primary btn-block" id="searchBtn">
+                        🔍 探索这个坐标
+                    </button>
+                    <button class="btn btn-info btn-block" id="newClueBtn">
+                        💡 获取新线索
+                    </button>
+                    <button class="btn btn-success btn-block" id="newGameBtn">
+                        🔄 重新开始新游戏
+                    </button>
+                </div>
+                
+                <div class="message-box" id="messageBox">
+                    点击格子或输入坐标开始寻宝！
+                </div>
+                
+                <div class="info-footer">
+                    <p style="text-align: center; color: #bdc3c7; font-size: 0.9rem; margin-top: 15px;">
+                        <i class="emoji">💡</i> 宝藏位于两个物品的行和列相交处 | 可开启/关闭视觉辅助
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>寻宝游戏 - 学习数对推理 | 可切换视觉辅助 | 适合不同学习阶段</p>
+        </footer>
+    </div>
+
+    <script>
+        // 游戏配置
+        const GRID_SIZE = 8;
+        const TOTAL_ITEMS = 6;
+        
+        // 物品库 (名称, 图标)
+        const ITEM_LIBRARY = [
+            { name: '松树', emoji: '🌲' },
+            { name: '橡树', emoji: '🌳' },
+            { name: '小屋', emoji: '🏠' },
+            { name: '高山', emoji: '⛰️' },
+            { name: '湖泊', emoji: '🌊' },
+            { name: '营地', emoji: '🏕️' },
+            { name: '雕像', emoji: '🗿' },
+            { name: '仙人掌', emoji: '🌵' },
+            { name: '花朵', emoji: '🌸' },
+            { name: '蘑菇', emoji: '🍄' }
+        ];
+        
+        // 游戏状态
+        let gameState = {
+            items: [],           // 物品位置 [{col, row, name, emoji}]
+            treasure: null,      // 宝藏位置 {col, row, rowItemIndex, colItemIndex}
+            explored: [],        // 已探索格子
+            treasureFound: false,
+            showCoordinates: true,
+            visualAid: true,     // 视觉辅助开关
+            clues: [],           // 线索列表 [{type: 'row'/'col', itemIndex, text}]
+            highlightedItems: []  // 当前高亮的物品索引
+        };
+        
+        // DOM元素
+        const gameGrid = document.getElementById('gameGrid');
+        const exploredCount = document.getElementById('exploredCount');
+        const remainingCount = document.getElementById('remainingCount');
+        const clueCount = document.getElementById('clueCount');
+        const treasureStatus = document.getElementById('treasureStatus');
+        const clueText = document.getElementById('clueText');
+        const clueHistory = document.getElementById('clueHistory');
+        const itemList = document.getElementById('itemList');
+        const messageBox = document.getElementById('messageBox');
+        const colInput = document.getElementById('colInput');
+        const rowInput = document.getElementById('rowInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+        const newClueBtn = document.getElementById('newClueBtn');
+        const showCoordsBtn = document.getElementById('showCoordsBtn');
+        const hideCoordsBtn = document.getElementById('hideCoordsBtn');
+        const visualAidOnBtn = document.getElementById('visualAidOnBtn');
+        const visualAidOffBtn = document.getElementById('visualAidOffBtn');
+        const visualAidStatus = document.getElementById('visualAidStatus');
+        const coordStatus = document.getElementById('coordStatus');
+        
+        // 初始化游戏
+        function initGame() {
+            // 创建探索网格
+            gameState.explored = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(false));
+            
+            // 随机生成物品位置 (不重复)
+            gameState.items = [];
+            const usedPositions = new Set();
+            
+            while (gameState.items.length < TOTAL_ITEMS) {
+                const col = Math.floor(Math.random() * GRID_SIZE);
+                const row = Math.floor(Math.random() * GRID_SIZE);
+                const posKey = `${col},${row}`;
+                
+                if (!usedPositions.has(posKey)) {
+                    usedPositions.add(posKey);
+                    const itemTemplate = ITEM_LIBRARY[Math.floor(Math.random() * ITEM_LIBRARY.length)];
+                    gameState.items.push({
+                        col, row,
+                        name: itemTemplate.name,
+                        emoji: itemTemplate.emoji
+                    });
+                }
+            }
+            
+            // 随机选择两个不同的物品作为线索物品
+            let itemIndex1, itemIndex2;
+            do {
+                itemIndex1 = Math.floor(Math.random() * gameState.items.length);
+                itemIndex2 = Math.floor(Math.random() * gameState.items.length);
+            } while (itemIndex1 === itemIndex2);
+            
+            // 宝藏位置 = 第一个物品的行 + 第二个物品的列
+            const rowItem = gameState.items[itemIndex1];
+            const colItem = gameState.items[itemIndex2];
+            
+            // 检查宝藏位置是否与物品重叠
+            const treasureCol = colItem.col;
+            const treasureRow = rowItem.row;
+            
+            // 如果宝藏位置与物品重叠，重新生成
+            const itemOverlap = gameState.items.some(item => item.col === treasureCol && item.row === treasureRow);
+            
+            if (itemOverlap) {
+                // 简单处理：重新生成整个游戏
+                initGame();
+                return;
+            }
+            
+            gameState.treasure = {
+                col: treasureCol,
+                row: treasureRow,
+                rowItemIndex: itemIndex1,
+                colItemIndex: itemIndex2
+            };
+            
+            gameState.treasureFound = false;
+            gameState.clues = [];
+            gameState.highlightedItems = [];
+            
+            // 更新显示
+            updateGrid();
+            updateStats();
+            updateItemList();
+            updateClueHistory();
+            
+            // 更新消息
+            messageBox.textContent = "新游戏开始！点击'获取新线索'得到提示，综合推理找到宝藏！";
+            messageBox.className = "message-box";
+            clueText.innerHTML = "点击下方按钮获取第一个线索";
+            treasureStatus.textContent = '❓';
+            
+            // 更新视觉辅助状态显示
+            updateVisualAidStatus();
+            updateCoordStatus();
+        }
+        
+        // 更新网格显示
+        function updateGrid() {
+            gameGrid.innerHTML = '';
+            
+            // 确定视觉辅助类
+            const visualAidClass = gameState.visualAid ? 'visual-aid-on' : '';
+            
+            for (let row = GRID_SIZE - 1; row >= 0; row--) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    
+                    // 设置数据属性
+                    cell.dataset.col = col + 1;
+                    cell.dataset.row = row + 1;
+                    
+                    // 检查是否有物品 (物品始终显示)
+                    const item = gameState.items.find(item => item.col === col && item.row === row);
+                    
+                    // 检查是否是宝藏
+                    const isTreasure = gameState.treasure && 
+                                      gameState.treasure.col === col && 
+                                      gameState.treasure.row === row;
+                    
+                    // 检查是否已探索
+                    const isExplored = gameState.explored[row][col];
+                    
+                    // 检查是否需要高亮 (根据线索)
+                    let isHighlighted = false;
+                    let highlightType = '';
+                    
+                    gameState.highlightedItems.forEach(itemIndex => {
+                        const highlightedItem = gameState.items[itemIndex];
+                        if (highlightedItem) {
+                            if (row === highlightedItem.row) {
+                                isHighlighted = true;
+                                highlightType = 'row';
+                            }
+                            if (col === highlightedItem.col) {
+                                isHighlighted = true;
+                                highlightType = 'col';
+                            }
+                        }
+                    });
+                    
+                    // 宝藏位置特殊高亮
+                    if (isTreasure && !gameState.treasureFound) {
+                        cell.classList.add('intersection');
+                    }
+                    
+                    // 添加高亮类（如果有视觉辅助）
+                    if (isHighlighted) {
+                        if (highlightType === 'row') {
+                            cell.classList.add('highlight-row');
+                        } else if (highlightType === 'col') {
+                            cell.classList.add('highlight-col');
+                        }
+                    }
+                    
+                    // 添加视觉辅助类（控制是否显示高亮）
+                    if (gameState.visualAid) {
+                        cell.classList.add('visual-aid-on');
+                    }
+                    
+                    if (isExplored) {
+                        cell.classList.add('revealed');
+                    }
+                    
+                    if (isTreasure && gameState.treasureFound) {
+                        cell.classList.add('treasure');
+                    }
+                    
+                    // 填充内容
+                    if (isTreasure && gameState.treasureFound) {
+                        cell.innerHTML = `
+                            <div class="emoji">💰</div>
+                            <div class="coordinates ${gameState.showCoordinates ? '' : 'hidden'}">(${col + 1},${row + 1})</div>
+                        `;
+                    } else if (item) {
+                        cell.innerHTML = `
+                            <div class="emoji">${item.emoji}</div>
+                            <div class="coordinates ${gameState.showCoordinates ? '' : 'hidden'}">(${col + 1},${row + 1})</div>
+                            <div class="item-name">${item.name}</div>
+                        `;
+                    } else if (isExplored) {
+                        cell.innerHTML = `
+                            <div class="emoji">🌫️</div>
+                            <div class="coordinates ${gameState.showCoordinates ? '' : 'hidden'}">(${col + 1},${row + 1})</div>
+                        `;
+                    } else {
+                        cell.innerHTML = `
+                            <div class="emoji">⬜</div>
+                            <div class="coordinates ${gameState.showCoordinates ? '' : 'hidden'}">(${col + 1},${row + 1})</div>
+                        `;
+                    }
+                    
+                    // 添加点击事件
+                    cell.addEventListener('click', () => {
+                        const col = parseInt(cell.dataset.col) - 1;
+                        const row = parseInt(cell.dataset.row) - 1;
+                        exploreCell(col, row);
+                    });
+                    
+                    gameGrid.appendChild(cell);
+                }
+            }
+        }
+        
+        // 更新物品列表
+        function updateItemList() {
+            itemList.innerHTML = '';
+            
+            gameState.items.forEach((item, index) => {
+                const badge = document.createElement('div');
+                badge.className = `item-badge ${gameState.highlightedItems.includes(index) ? 'active' : ''}`;
+                badge.innerHTML = `${item.emoji} ${item.name}`;
+                badge.title = `位置: (${item.col + 1}, ${item.row + 1})`;
+                
+                // 点击物品高亮其行和列
+                badge.addEventListener('click', () => {
+                    if (gameState.highlightedItems.includes(index)) {
+                        // 取消高亮
+                        gameState.highlightedItems = gameState.highlightedItems.filter(i => i !== index);
+                    } else {
+                        // 添加高亮
+                        gameState.highlightedItems.push(index);
+                    }
+                    updateGrid();
+                });
+                
+                itemList.appendChild(badge);
+            });
+        }
+        
+        // 生成新线索
+        function generateNewClue() {
+            if (gameState.treasureFound) {
+                messageBox.textContent = "宝藏已找到！点击'新游戏'重新开始。";
+                messageBox.className = "message-box warning";
+                return;
+            }
+            
+            // 随机决定给出行线索还是列线索
+            // 但确保两个线索都出现过
+            let clueType;
+            const hasRowClue = gameState.clues.some(c => c.type === 'row');
+            const hasColClue = gameState.clues.some(c => c.type === 'col');
+            
+            if (!hasRowClue) {
+                clueType = 'row';
+            } else if (!hasColClue) {
+                clueType = 'col';
+            } else {
+                // 两个都有了，随机选择
+                clueType = Math.random() < 0.5 ? 'row' : 'col';
+            }
+            
+            let clueItemIndex;
+            let clueText_str;
+            
+            if (clueType === 'row') {
+                // 行线索：宝藏与某个物品在同一行
+                clueItemIndex = gameState.treasure.rowItemIndex;
+                const item = gameState.items[clueItemIndex];
+                clueText_str = `宝藏与 ${item.emoji} ${item.name} 在<strong class="clue-highlight">同一行</strong>`;
+            } else {
+                // 列线索：宝藏与某个物品在同一列
+                clueItemIndex = gameState.treasure.colItemIndex;
+                const item = gameState.items[clueItemIndex];
+                clueText_str = `宝藏与 ${item.emoji} ${item.name} 在<strong class="clue-highlight">同一列</strong>`;
+            }
+            
+            // 检查是否已经有过这个线索
+            const existingClue = gameState.clues.find(c => 
+                c.type === clueType && c.itemIndex === clueItemIndex
+            );
+            
+            if (existingClue) {
+                // 如果已经有了，重新生成（简单处理：直接调用自身，但避免无限递归）
+                if (gameState.clues.length < 2) {
+                    generateNewClue();
+                } else {
+                    // 如果已经有两条线索了，就显示一条已有的
+                    const randomClue = gameState.clues[Math.floor(Math.random() * gameState.clues.length)];
+                    clueText.innerHTML = randomClue.text;
+                }
+                return;
+            }
+            
+            // 添加新线索
+            const newClue = {
+                type: clueType,
+                itemIndex: clueItemIndex,
+                text: clueText_str
+            };
+            
+            gameState.clues.push(newClue);
+            
+            // 自动高亮线索相关的物品
+            gameState.highlightedItems = [];
+            gameState.clues.forEach(clue => {
+                if (!gameState.highlightedItems.includes(clue.itemIndex)) {
+                    gameState.highlightedItems.push(clue.itemIndex);
+                }
+            });
+            
+            // 更新显示
+            clueText.innerHTML = clueText_str;
+            updateClueHistory();
+            updateGrid();
+            updateStats();
+            
+            // 如果两个线索都有了，提示玩家
+            if (gameState.clues.length === 2) {
+                messageBox.innerHTML = "🎯 你已经有了行和列两个线索！宝藏就在它们的<span class='clue-highlight'>相交处</span>！";
+                messageBox.className = "message-box info";
+            }
+        }
+        
+        // 更新线索历史
+        function updateClueHistory() {
+            clueHistory.innerHTML = '';
+            
+            if (gameState.clues.length === 0) {
+                const emptyItem = document.createElement('div');
+                emptyItem.className = 'history-item';
+                emptyItem.textContent = '还没有线索，点击"获取新线索"';
+                clueHistory.appendChild(emptyItem);
+            } else {
+                gameState.clues.forEach((clue, index) => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    // 移除HTML标签用于历史记录显示
+                    const plainText = clue.text.replace(/<[^>]*>/g, '');
+                    historyItem.textContent = `线索 ${index + 1}: ${plainText}`;
+                    clueHistory.appendChild(historyItem);
+                });
+            }
+            
+            clueCount.textContent = gameState.clues.length;
+        }
+        
+        // 切换坐标显示
+        function toggleCoordinates(show) {
+            gameState.showCoordinates = show;
+            updateGrid();
+            updateCoordStatus();
+        }
+        
+        // 切换视觉辅助
+        function toggleVisualAid(show) {
+            gameState.visualAid = show;
+            updateGrid();
+            updateVisualAidStatus();
+        }
+        
+        // 更新坐标状态显示
+        function updateCoordStatus() {
+            coordStatus.textContent = `当前: ${gameState.showCoordinates ? '显示坐标' : '隐藏坐标'}`;
+        }
+        
+        // 更新视觉辅助状态显示
+        function updateVisualAidStatus() {
+            visualAidStatus.textContent = `视觉辅助: ${gameState.visualAid ? '开启' : '关闭'}`;
+        }
+        
+        // 探索格子
+        function exploreCell(col, row) {
+            // 检查是否已找到宝藏
+            if (gameState.treasureFound) {
+                messageBox.textContent = "宝藏已找到！点击'新游戏'重新开始。";
+                messageBox.className = "message-box warning";
+                return;
+            }
+            
+            // 检查是否已探索
+            if (gameState.explored[row][col]) {
+                messageBox.textContent = `坐标 (${col + 1}, ${row + 1}) 已经探索过了！`;
+                messageBox.className = "message-box warning";
+                return;
+            }
+            
+            // 标记为已探索
+            gameState.explored[row][col] = true;
+            
+            // 检查是否有物品
+            const item = gameState.items.find(item => item.col === col && item.row === row);
+            
+            // 检查是否是宝藏
+            const isTreasure = gameState.treasure && 
+                              gameState.treasure.col === col && 
+                              gameState.treasure.row === row;
+            
+            if (isTreasure) {
+                gameState.treasureFound = true;
+                treasureStatus.textContent = '💰';
+                
+                const rowItem = gameState.items[gameState.treasure.rowItemIndex];
+                const colItem = gameState.items[gameState.treasure.colItemIndex];
+                
+                messageBox.innerHTML = `🎉 恭喜你找到了宝藏！<br>位置: (${col + 1}, ${row + 1})<br>由 ${rowItem.emoji} ${rowItem.name} 的行 和 ${colItem.emoji} ${colItem.name} 的列 相交而成！`;
+                messageBox.className = "message-box success";
+                clueText.innerHTML = `🏆 宝藏已找到！ 🏆`;
+            } else if (item) {
+                messageBox.innerHTML = `📍 这是 ${item.emoji} ${item.name} 的位置 (${col + 1}, ${row + 1})！<br>记住它的行和列，可能与宝藏有关。`;
+                messageBox.className = "message-box info";
+            } else {
+                // 检查是否在可能的宝藏位置
+                const possibleRow = gameState.treasure.row;
+                const possibleCol = gameState.treasure.col;
+                
+                if (row === possibleRow && col === possibleCol) {
+                    // 这个情况不应该发生，因为上面已经检查了isTreasure
+                } else if (row === possibleRow) {
+                    messageBox.textContent = `坐标 (${col + 1}, ${row + 1}) 与宝藏同一行，但列不对。`;
+                } else if (col === possibleCol) {
+                    messageBox.textContent = `坐标 (${col + 1}, ${row + 1}) 与宝藏同一列，但行不对。`;
+                } else {
+                    messageBox.textContent = `坐标 (${col + 1}, ${row + 1}) 是空地，不是宝藏。`;
+                }
+                messageBox.className = "message-box";
+            }
+            
+            // 更新显示
+            updateGrid();
+            updateStats();
+        }
+        
+        // 更新统计信息
+        function updateStats() {
+            let explored = 0;
+            for (let row = 0; row < GRID_SIZE; row++) {
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    if (gameState.explored[row][col]) {
+                        explored++;
+                    }
+                }
+            }
+            
+            exploredCount.textContent = explored;
+            remainingCount.textContent = GRID_SIZE * GRID_SIZE - explored;
+        }
+        
+        // 通过输入搜索
+        function searchByInput() {
+            const col = parseInt(colInput.value) - 1;
+            const row = parseInt(rowInput.value) - 1;
+            
+            // 验证输入
+            if (isNaN(col) || isNaN(row) || col < 0 || col >= GRID_SIZE || row < 0 || row >= GRID_SIZE) {
+                messageBox.textContent = "请输入有效的坐标 (1-8)！";
+                messageBox.className = "message-box error";
+                return;
+            }
+            
+            exploreCell(col, row);
+        }
+        
+        // 新游戏
+        function newGame() {
+            initGame();
+        }
+        
+        // 事件监听
+        searchBtn.addEventListener('click', searchByInput);
+        newGameBtn.addEventListener('click', newGame);
+        newClueBtn.addEventListener('click', generateNewClue);
+        showCoordsBtn.addEventListener('click', () => toggleCoordinates(true));
+        hideCoordsBtn.addEventListener('click', () => toggleCoordinates(false));
+        visualAidOnBtn.addEventListener('click', () => toggleVisualAid(true));
+        visualAidOffBtn.addEventListener('click', () => toggleVisualAid(false));
+        
+        // 键盘支持
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                searchByInput();
+            }
+        });
+        
+        // 输入限制
+        colInput.addEventListener('input', function() {
+            if (this.value > 8) this.value = 8;
+            if (this.value < 1) this.value = 1;
+        });
+        
+        rowInput.addEventListener('input', function() {
+            if (this.value > 8) this.value = 8;
+            if (this.value < 1) this.value = 1;
+        });
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initGame();
+        });
+    </script>
+</body>
+</html>
